@@ -116,7 +116,15 @@ prompt = ChatPromptTemplate.from_messages(
             """
             Answer the question using ONLY the following context. If you don't know the answer just say you don't know. DON'T make anything up.
             
-            
+            A keyword is passed as Input. 
+
+            The URLs passed to the system are news articles, which we'll call context.
+            Positive - if the context contains the keyword and uses a favorable expression for that keyword.
+            Negative - if the context contains the keyword and uses language that is critical of the keyword.
+            Neutral - the context contains the keyword and has an equal or similar ratio of positive/negative language for that keyword.
+            None - the context does not contain the keyword, or the context is unrelated to the keyword.
+
+            The keyword being passed is a noun, not a verb, and should be judged irrelevant if used as a verb. If the keyword contains commas, it is judged as multiple keywords and all keywords are included.
             Context: {context}
             """,
         ),
@@ -135,10 +143,15 @@ map_data_frame_chain = (
 
 date_filterd_df = pd.DataFrame()
 
+current_index = 0
+total_index = 0
+
 def map_data_frame(inputs):
     question = inputs["question"]
     results = {'감정': [], '뉴스 식별자':[]}
+    total_index = len(date_filterd_df)
     for idx, row in date_filterd_df.iterrows():
+        current_index=idx
         content = row['URL']
         id = row['뉴스 식별자'] 
         response = map_data_frame_chain.invoke(
@@ -179,11 +192,9 @@ if file:
 
     if st.button("분석하기"):
         # 일자 
-        # st.write(type(start_date))
         start_date = start_date.replace("-","")
         end_date = end_date.replace("-","")
         date_filterd_df = df[(df['일자'] > start_date) & (df['일자'] < end_date)]
-
 
         map_chain = {
             "question": RunnablePassthrough()
